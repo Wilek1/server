@@ -228,7 +228,7 @@ class SCSSCacher {
 	 */
 	public function getInjectedVariables() {
 		$variables = '';
-		foreach ($this->defaults->getThemingVariables() as $key => $value) {
+		foreach ($this->defaults->getScssVariables() as $key => $value) {
 			$variables .= '$' . $key . ': ' . $value . ';';
 		}
 		return $variables;

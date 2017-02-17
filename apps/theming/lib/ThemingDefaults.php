@@ -40,6 +40,8 @@ class ThemingDefaults extends \OC_Defaults {
 	private $urlGenerator;
 	/** @var IRootFolder */
 	private $rootFolder;
+	/** @var \OC_Defaults */
+	private $defaults;
 	/** @var ICacheFactory */
 	private $cacheFactory;
 	/** @var string */
@@ -66,19 +68,21 @@ class ThemingDefaults extends \OC_Defaults {
 								IURLGenerator $urlGenerator,
 								\OC_Defaults $defaults,
 								IRootFolder $rootFolder,
-								ICacheFactory $cacheFactory
+								ICacheFactory $cacheFactory,
+								Util $util
 	) {
-		parent::__construct();
 		$this->config = $config;
 		$this->l = $l;
 		$this->urlGenerator = $urlGenerator;
+		$this->defaults = $defaults;
 		$this->rootFolder = $rootFolder;
 		$this->cacheFactory = $cacheFactory;
+		$this->util = $util;
 
-		$this->name = $defaults->getName();
-		$this->url = $defaults->getBaseUrl();
-		$this->slogan = $defaults->getSlogan();
-		$this->color = $defaults->getMailHeaderColor();
+		$this->name = $this->defaults->getName();
+		$this->url = $this->defaults->getBaseUrl();
+		$this->slogan = $this->defaults->getSlogan();
+		$this->color = $this->defaults->getMailHeaderColor();
 	}
 
 	public function getName() {
@@ -151,6 +155,29 @@ class ThemingDefaults extends \OC_Defaults {
 		}
 	}
 
+
+	public function getScssVariables() {
+		$cache = $this->cacheFactory->create('theming');
+		if($value = $cache->get('getScssVariables')) {
+			return $value;
+		}
+
+		if ($this->config->getAppValue('theming', 'color', null) === null) {
+			return parent::getScssVariables();
+		}
+		if($this->util->invertTextColor($this->getMailHeaderColor())) {
+			$colorPrimaryText = '#000000';
+		} else {
+			$colorPrimaryText = '#ffffff';
+		}
+		$value = [
+			'color-primary' => $this->getMailHeaderColor(),
+			'color-primary-text' => $colorPrimaryText,
+		];
+		$cache->set('getScssVariables', $value);
+		return $value;
+	}
+
 	/**
 	 * Check if Imagemagick is enabled and if SVG is supported
 	 * otherwise we can't render custom icons
@@ -180,6 +207,7 @@ class ThemingDefaults extends \OC_Defaults {
 	private function increaseCacheBuster() {
 		$cacheBusterKey = $this->config->getAppValue('theming', 'cachebuster', '0');
 		$this->config->setAppValue('theming', 'cachebuster', (int)$cacheBusterKey+1);
+		$this->cacheFactory->create('theming')->clear('getScssVariables');
 	}
 
 	/**

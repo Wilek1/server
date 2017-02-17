@@ -24,6 +24,8 @@
 namespace OCA\Theming\Tests;
 
 use OCA\Theming\ThemingDefaults;
+use OCA\Theming\Util;
+use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IL10N;
@@ -56,6 +58,8 @@ class ThemingDefaultsTest extends TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 		$this->cacheFactory = $this->getMockBuilder(ICacheFactory::class)->getMock();
+		$this->cache = $this->createMock(ICache::class);
+		$this->util = $this->createMock(Util::class);
 		$this->defaults = $this->getMockBuilder(\OC_Defaults::class)
 			->disableOriginalConstructor()
 			->getMock();
@@ -75,13 +79,19 @@ class ThemingDefaultsTest extends TestCase {
 			->expects($this->at(3))
 			->method('getMailHeaderColor')
 			->willReturn('#000');
+		$this->cacheFactory
+			->expects($this->any())
+			->method('create')
+			->with('theming')
+			->willReturn($this->cache);
 		$this->template = new ThemingDefaults(
 			$this->config,
 			$this->l10n,
 			$this->urlGenerator,
 			$this->defaults,
 			$this->rootFolder,
-			$this->cacheFactory
+			$this->cacheFactory,
+			$this->util
 		);
 	}
 
@@ -266,7 +276,10 @@ class ThemingDefaultsTest extends TestCase {
 			->expects($this->at(2))
 			->method('setAppValue')
 			->with('theming', 'cachebuster', 16);
-
+		$this->cache
+			->expects($this->once())
+			->method('clear')
+			->with('getScssVariables');
 		$this->template->set('MySetting', 'MyValue');
 	}
 

@@ -321,89 +321,19 @@ class ThemingController extends Controller {
 	public function getStylesheet() {
 		$cacheBusterValue = $this->config->getAppValue('theming', 'cachebuster', '0');
 		$responseCss = '';
-		$color = $this->config->getAppValue($this->appName, 'color');
-		$elementColor = $this->util->elementColor($color);
 
-		if($this->util->invertTextColor($color)) {
-			$textColor = '#000000';
-		} else {
-			$textColor = '#ffffff';
-		}
-
-		if($color !== '') {
-			$responseCss .= sprintf(
-				'#body-user #header,#body-settings #header,#body-public #header,#body-login,.searchbox input[type="search"]:focus,.searchbox input[type="search"]:active,.searchbox input[type="search"]:valid {background-color: %s}' . "\n",
-				$color
-			);
-			$responseCss .= sprintf('input[type="checkbox"].checkbox:checked:enabled:not(.checkbox--white) + label:before {' .
-				'background-image:url(\'%s/core/img/actions/checkmark-white.svg\');' .
-				'background-color: %s; background-position: center center; background-size:contain;' .
-				'width:12px; height:12px; padding:0; margin:2px 6px 6px 2px; border-radius:1px;' .
-				"}\n",
-				\OC::$WEBROOT,
-				$elementColor
-			);
-			$responseCss .= 'input[type="radio"].radio:checked:not(.radio--white):not(:disabled) + label:before {' .
-				'background-image: url(\'data:image/svg+xml;base64,'.$this->util->generateRadioButton($elementColor).'\');' .
-				"}\n";
-			$responseCss .= '.primary, input[type="submit"].primary, input[type="button"].primary, button.primary, .button.primary,' .
-				'.primary:active, input[type="submit"].primary:active, input[type="button"].primary:active, button.primary:active, .button.primary:active {' .
-				'border: 1px solid '.$elementColor.';'.
-				'background-color: '.$elementColor.';'.
-				'color: ' . $textColor . ';'.
-				"}\n" .
-				'.primary:hover, input[type="submit"].primary:hover, input[type="button"].primary:hover, button.primary:hover, .button.primary:hover,' .
-				'.primary:focus, input[type="submit"].primary:focus, input[type="button"].primary:focus, button.primary:focus, .button.primary:focus {' .
-				'border: 1px solid '.$elementColor.';'.
-				'background-color: '.$elementColor.';'.
-				'color: ' . $textColor . ';'.
-				"}\n" .
-				'.primary:disabled, input[type="submit"].primary:disabled, input[type="button"].primary:disabled, button.primary:disabled, .button.primary:disabled,' .
-				'.primary:disabled:hover, input[type="submit"].primary:disabled:hover, input[type="button"].primary:disabled:hover, button.primary:disabled:hover, .button.primary:disabled:hover,' .
-				'.primary:disabled:focus, input[type="submit"].primary:disabled:focus, input[type="button"].primary:disabled:focus, button.primary:disabled:focus, .button.primary:disabled:focus {' .
-				'border: 1px solid '.$elementColor.';'.
-				'background-color: '.$elementColor.';'.
-				'opacity: 0.4;' .
-				'color: '.$textColor.';'.
-				"}\n";
-			$responseCss .= '.ui-widget-header { border: 1px solid ' . $color . '; background: '. $color . '; color: #ffffff;' . "}\n";
-			$responseCss .= '.ui-state-active, .ui-widget-content .ui-state-active, .ui-widget-header .ui-state-active {' .
-				'border: 1px solid ' . $color . ';' .
-				'color: ' . $elementColor . ';' .
-				"}\n";
-			$responseCss .= '.ui-state-active a, .ui-state-active a:link, .ui-state-active a:visited {' .
-				'color: ' . $elementColor . ';' .
-				"}\n";
-			$responseCss .= '
-				#firstrunwizard .firstrunwizard-header {
-					background-color: ' . $color . ';
-				}
-				#firstrunwizard p a {
-					color: ' . $color . ';
-				}
-				';
-			$responseCss .= sprintf('.nc-theming-main-background {background-color: %s}' . "\n", $color);
-			$responseCss .= sprintf('.nc-theming-main-text {color: %s}' . "\n", $color);
-			$responseCss .= sprintf('#app-navigation li:hover > a, #app-navigation li:focus > a, #app-navigation a:focus, #app-navigation .selected, #app-navigation .selected a, #app-navigation .active, #app-navigation .active a {box-shadow: inset 2px 0 %s}' . "\n", $color);
-
-		}
 		$logo = $this->config->getAppValue($this->appName, 'logoMime');
 		if($logo !== '') {
 			$responseCss .= sprintf(
-				'#header .logo {' .
-				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
-				'background-size: contain;' .
-				'}' . "\n" .
-				'#header .logo-icon {' .
-				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
-				'background-size: contain;' .
-				'}' . "\n" .
+				'#header .logo, ' .
+				'#header .logo-icon, ' .
 				'#firstrunwizard .firstrunwizard-header .logo {' .
 				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
 				'background-size: contain;' .
 				'}' . "\n"
 			);
 		}
+
 		$backgroundLogo = $this->config->getAppValue($this->appName, 'backgroundMime');
 		if($backgroundLogo !== '') {
 			$responseCss .= '#body-login {background-image: url(\'./loginbackground?v='.$cacheBusterValue.'\');}' . "\n";
@@ -411,19 +341,19 @@ class ThemingController extends Controller {
 				'background-image: url(\'./loginbackground?v='.$cacheBusterValue.'\');' .
 			'}' . "\n";
 		}
-		if($this->util->invertTextColor($color)) {
-			$responseCss .= '#header .header-appname, #expandDisplayName { color: #000000; }' . "\n";
-			$responseCss .= '#header .icon-caret { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/caret-dark.svg\'); }' . "\n";
-			$responseCss .= '.searchbox input[type="search"] { background: transparent url(\'' . \OC::$WEBROOT . '/core/img/actions/search.svg\') no-repeat 6px center; color: #000; }' . "\n";
-			$responseCss .= '.searchbox input[type="search"]:focus,.searchbox input[type="search"]:active,.searchbox input[type="search"]:valid { color: #000; border: 1px solid rgba(0, 0, 0, .5); }' . "\n";
-			$responseCss .= '#body-login input.login { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/confirm.svg?v=2\'); }' . "\n";
-			$responseCss .= '.nc-theming-contrast {color: #000000}' . "\n";
-			$responseCss .= '.ui-widget-header { color: #000000; }' . "\n";
-		} else {
-			$responseCss .= '.nc-theming-contrast {color: #ffffff}' . "\n";
-		}
 
-		if($logo !== '' or $color !== '') {
+		$color = $this->config->getAppValue($this->appName, 'color');
+		if($color !== '') {
+			$responseCss .= sprintf('.nc-theming-main-background {background-color: %s}' . "\n", $color);
+			$responseCss .= sprintf('.nc-theming-main-text {color: %s}' . "\n", $color);
+			if($this->util->invertTextColor($color)) {
+				$responseCss .= '#header .icon-caret { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/caret-dark.svg\'); }' . "\n";
+				$responseCss .= '.searchbox input[type="search"] { background: transparent url(\'' . \OC::$WEBROOT . '/core/img/actions/search.svg\') no-repeat 6px center; }' . "\n";
+				$responseCss .= '#body-login input.login { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/confirm.svg?v=2\'); }' . "\n";
+				$responseCss .= '.nc-theming-contrast {color: #000000}' . "\n";
+			} else {
+				$responseCss .= '.nc-theming-contrast {color: #ffffff}' . "\n";
+			}
 			$responseCss .= '.icon-file,.icon-filetype-text {' .
 				'background-image: url(\'./img/core/filetypes/text.svg?v='.$cacheBusterValue.'\');' . "}\n" .
 				'.icon-folder, .icon-filetype-folder {' .
@@ -438,6 +368,7 @@ class ThemingController extends Controller {
 		$response->cacheFor(3600);
 		return $response;
 	}
+
 	/**
 	 * @NoCSRFRequired
 	 * @PublicPage
