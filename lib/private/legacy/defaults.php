@@ -283,6 +283,13 @@ class OC_Defaults {
 		}
 	}
 
+	/**
+	 * @return array scss variables to overwrite
+	 */
+	public function getThemingVariables() {
+		return [];
+	}
+
 	public function shouldReplaceIcons() {
 		return false;
 	}
