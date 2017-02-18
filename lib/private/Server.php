@@ -831,7 +831,7 @@ class Server extends ServerContainer implements IServerContainer {
 					$c->getL10N('theming'),
 					$c->getURLGenerator(),
 					new \OC_Defaults(),
-					$c->getLazyRootFolder(),
+					$c->getAppDataDir('theming'),
 					$c->getMemCacheFactory(),
 					new Util($c->getConfig(), $this->getRootFolder(), $this->getAppManager())
 				);

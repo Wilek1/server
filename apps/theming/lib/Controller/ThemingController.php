@@ -27,6 +27,7 @@
 
 namespace OCA\Theming\Controller;
 
+use OC\Template\SCSSCacher;
 use OCA\Theming\ThemingDefaults;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -316,57 +317,46 @@ class ThemingController extends Controller {
 	 * @NoCSRFRequired
 	 * @PublicPage
 	 *
-	 * @return DataDownloadResponse
+	 * @return FileDisplayResponse|NotFoundResponse
+	 * @throws NotFoundException
 	 */
 	public function getStylesheet() {
+		$appDataCss = \OC::$server->getAppDataDir('css');
 		$cacheBusterValue = $this->config->getAppValue('theming', 'cachebuster', '0');
-		$responseCss = '';
 
-		$logo = $this->config->getAppValue($this->appName, 'logoMime');
-		if($logo !== '') {
-			$responseCss .= sprintf(
-				'#header .logo, ' .
-				'#header .logo-icon, ' .
-				'#firstrunwizard .firstrunwizard-header .logo {' .
-				'background-image: url(\'./logo?v='.$cacheBusterValue.'\');' .
-				'background-size: contain;' .
-				'}' . "\n"
-			);
+		/* SCSSCacher is required here
+		 * We cannot rely on automatic caching done by \OC_Util::addStyle,
+		 * since we need to add the cacheBuster value to the url
+		 */
+		$SCSSCacher = new SCSSCacher(
+			\OC::$server->getLogger(),
+			$appDataCss,
+			\OC::$server->getURLGenerator(),
+			\OC::$server->getConfig(),
+			\OC::$server->getThemingDefaults(),
+			\OC::$SERVERROOT
+		);
+		$appPath = substr(\OC::$server->getAppManager()->getAppPath('theming'), strlen(\OC::$SERVERROOT) + 1);
+		$SCSSCacher->process(
+			\OC::$SERVERROOT,
+			$appPath . '/css/theming.scss',
+			$cacheBusterValue
+		);
+
+		try {
+			$folder = $appDataCss->getFolder($cacheBusterValue);
+			$cssFile = $folder->getFile('theming.css');
+			$response = new FileDisplayResponse($cssFile, Http::STATUS_OK, ['Content-Type' => 'text/css']);
+			$response->cacheFor(86400);
+			$expires = new \DateTime();
+			$expires->setTimestamp($this->timeFactory->getTime());
+			$expires->add(new \DateInterval('PT24H'));
+			$response->addHeader('Expires', $expires->format(\DateTime::RFC1123));
+			$response->addHeader('Pragma', 'cache');
+			return $response;
+		} catch (NotFoundException $e) {
+			return new NotFoundResponse();
 		}
-
-		$backgroundLogo = $this->config->getAppValue($this->appName, 'backgroundMime');
-		if($backgroundLogo !== '') {
-			$responseCss .= '#body-login {background-image: url(\'./loginbackground?v='.$cacheBusterValue.'\');}' . "\n";
-			$responseCss .= '#firstrunwizard .firstrunwizard-header {' .
-				'background-image: url(\'./loginbackground?v='.$cacheBusterValue.'\');' .
-			'}' . "\n";
-		}
-
-		$color = $this->config->getAppValue($this->appName, 'color');
-		if($color !== '') {
-			$responseCss .= sprintf('.nc-theming-main-background {background-color: %s}' . "\n", $color);
-			$responseCss .= sprintf('.nc-theming-main-text {color: %s}' . "\n", $color);
-			if($this->util->invertTextColor($color)) {
-				$responseCss .= '#header .icon-caret { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/caret-dark.svg\'); }' . "\n";
-				$responseCss .= '.searchbox input[type="search"] { background: transparent url(\'' . \OC::$WEBROOT . '/core/img/actions/search.svg\') no-repeat 6px center; }' . "\n";
-				$responseCss .= '#body-login input.login { background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/confirm.svg?v=2\'); }' . "\n";
-				$responseCss .= '.nc-theming-contrast {color: #000000}' . "\n";
-			} else {
-				$responseCss .= '.nc-theming-contrast {color: #ffffff}' . "\n";
-			}
-			$responseCss .= '.icon-file,.icon-filetype-text {' .
-				'background-image: url(\'./img/core/filetypes/text.svg?v='.$cacheBusterValue.'\');' . "}\n" .
-				'.icon-folder, .icon-filetype-folder {' .
-				'background-image: url(\'./img/core/filetypes/folder.svg?v='.$cacheBusterValue.'\');' . "}\n" .
-				'.icon-filetype-folder-drag-accept {' .
-				'background-image: url(\'./img/core/filetypes/folder-drag-accept.svg?v='.$cacheBusterValue.'\')!important;' . "}\n";
-		}
-
-		$response = new DataDownloadResponse($responseCss, 'style', 'text/css');
-		$response->addHeader('Expires', date(\DateTime::RFC2822, $this->timeFactory->getTime()));
-		$response->addHeader('Pragma', 'cache');
-		$response->cacheFor(3600);
-		return $response;
 	}
 
 	/**

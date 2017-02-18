@@ -22,13 +22,13 @@
 
 namespace OCA\Theming;
 
-
+use OCP\Files\IAppData;
+use OCP\Files\NotFoundException;
 use OCP\ICacheFactory;
 use OCP\IConfig;
 use OCP\IL10N;
 use OCP\IURLGenerator;
 use OCP\Files\IRootFolder;
-use OCP\Util;
 
 class ThemingDefaults extends \OC_Defaults {
 
@@ -38,8 +38,8 @@ class ThemingDefaults extends \OC_Defaults {
 	private $l;
 	/** @var IURLGenerator */
 	private $urlGenerator;
-	/** @var IRootFolder */
-	private $rootFolder;
+	/** @var IAppData */
+	private $appData;
 	/** @var \OC_Defaults */
 	private $defaults;
 	/** @var ICacheFactory */
@@ -60,14 +60,15 @@ class ThemingDefaults extends \OC_Defaults {
 	 * @param IL10N $l
 	 * @param IURLGenerator $urlGenerator
 	 * @param \OC_Defaults $defaults
-	 * @param IRootFolder $rootFolder
+	 * @param IRootFolder $appData
 	 * @param ICacheFactory $cacheFactory
+	 * @param Util $util
 	 */
 	public function __construct(IConfig $config,
 								IL10N $l,
 								IURLGenerator $urlGenerator,
 								\OC_Defaults $defaults,
-								IRootFolder $rootFolder,
+								IAppData $appData,
 								ICacheFactory $cacheFactory,
 								Util $util
 	) {
@@ -75,7 +76,7 @@ class ThemingDefaults extends \OC_Defaults {
 		$this->l = $l;
 		$this->urlGenerator = $urlGenerator;
 		$this->defaults = $defaults;
-		$this->rootFolder = $rootFolder;
+		$this->appData = $appData;
 		$this->cacheFactory = $cacheFactory;
 		$this->util = $util;
 
@@ -106,7 +107,7 @@ class ThemingDefaults extends \OC_Defaults {
 	}
 
 	public function getSlogan() {
-		return Util::sanitizeHTML($this->config->getAppValue('theming', 'slogan', $this->slogan));
+		return \OCP\Util::sanitizeHTML($this->config->getAppValue('theming', 'slogan', $this->slogan));
 	}
 
 	public function getShortFooter() {
@@ -133,8 +134,13 @@ class ThemingDefaults extends \OC_Defaults {
 	 * @return string
 	 */
 	public function getLogo() {
-		$logo = $this->config->getAppValue('theming', 'logoMime');
-		if(!$logo || !$this->rootFolder->nodeExists('/themedinstancelogo')) {
+		try {
+			$file = $this->appData->getFolder('images')->getFile('logo');
+		} catch (NotFoundException $e) {
+			$file = null;
+		}
+		$logo = $this->config->getAppValue('theming', 'logoMime', false);
+		if(!$logo || $file === null) {
 			return $this->urlGenerator->imagePath('core','logo.svg');
 		} else {
 			return $this->urlGenerator->linkToRoute('theming.Theming.getLogo');
@@ -147,8 +153,13 @@ class ThemingDefaults extends \OC_Defaults {
 	 * @return string
 	 */
 	public function getBackground() {
-		$backgroundLogo = $this->config->getAppValue('theming', 'backgroundMime');
-		if(!$backgroundLogo || !$this->rootFolder->nodeExists('/themedbackgroundlogo')) {
+		try {
+			$file = $this->appData->getFolder('images')->getFile('background');
+		} catch (NotFoundException $e) {
+			$file = null;
+		}
+		$backgroundLogo = $this->config->getAppValue('theming', 'backgroundMime', false);
+		if(!$backgroundLogo || $file === null) {
 			return $this->urlGenerator->imagePath('core','background.jpg');
 		} else {
 			return $this->urlGenerator->linkToRoute('theming.Theming.getLoginBackground');
@@ -162,20 +173,30 @@ class ThemingDefaults extends \OC_Defaults {
 			return $value;
 		}
 
-		if ($this->config->getAppValue('theming', 'color', null) === null) {
-			return parent::getScssVariables();
-		}
-		if($this->util->invertTextColor($this->getMailHeaderColor())) {
-			$colorPrimaryText = '#000000';
-		} else {
-			$colorPrimaryText = '#ffffff';
-		}
-		$value = [
-			'color-primary' => $this->getMailHeaderColor(),
-			'color-primary-text' => $colorPrimaryText,
+		$variables = [
+			'theming-cachebuster' => '"'.$this->config->getAppValue('theming', 'cachebuster', '0').'"',
 		];
-		$cache->set('getScssVariables', $value);
-		return $value;
+		if(($this->config->getSystemValue('htaccess.IgnoreFrontController', false) === true ||
+			getenv('front_controller_active') === 'true')) {
+			$variables['nc-webroot'] = '"../../../"';
+		} else {
+			$variables['nc-webroot'] = '"../../../"';
+		}
+
+		$variables['image-logo'] = "'../../".$this->getLogo()."'";
+		$variables['image-login-background'] = "'../../".$this->getBackground()."'";
+
+		if ($this->config->getAppValue('theming', 'color', null) !== null) {
+			if ($this->util->invertTextColor($this->getMailHeaderColor())) {
+				$colorPrimaryText = '#000000';
+			} else {
+				$colorPrimaryText = '#ffffff';
+			}
+			$variables['color-primary'] = $this->getMailHeaderColor();
+			$variables['color-primary-text'] = $colorPrimaryText;
+		}
+		$cache->set('getScssVariables', $variables);
+		return $variables;
 	}
 
 	/**

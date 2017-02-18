@@ -218,7 +218,9 @@ class SCSSCacher {
 	public function resetCache() {
 		foreach ($this->appData->getDirectoryListing() as $folder) {
 			foreach ($folder->getDirectoryListing() as $file) {
-				$file->delete();
+				if(substr($file->getName(), -3) === "css" || substr($file->getName(), -4) === "deps") {
+					$file->delete();
+				}
 			}
 		}
 	}

@@ -1,0 +1,43 @@
+.nc-theming-main-background {
+  background-color: $color-primary;
+}
+.nc-theming-main-text {
+  color: $color-primary-text;
+}
+.nc-theming-contrast {
+  color: $color-primary-text;
+}
+
+@if(lightness($color-primary) > 50) {
+  #header .icon-caret {
+    background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/caret-dark.svg\');
+  }
+  .searchbox input[type="search"] {
+    background: transparent url(\'' . \OC::$WEBROOT . '/core/img/actions/search.svg\') no-repeat 6px center;
+  }
+  #body-login input.login {
+    background-image: url(\'' . \OC::$WEBROOT . '/core/img/actions/confirm.svg?v=2\');
+  }
+}
+
+/* Colorized svg images */
+.icon-file,.icon-filetype-text {
+  content: $theming-cachebuster;
+  background-image: url(./apps/theming/img/core/filetypes/text.svg?v=#{$theming-cachebuster});
+}
+.icon-folder, .icon-filetype-folder {
+  background-image: url(./apps/theming/img/core/filetypes/folder.svg?v=#{$theming-cachebuster});
+}
+.icon-filetype-folder-drag-accept {
+  background-image: url(./apps/theming/img/core/filetypes/folder-drag-accept.svg?v=#{$theming-cachebuster}) !important;
+}
+
+#header .logo,
+#header .logo-icon {
+  background-size: contain;
+}
+
+#body-login,
+#firstrunwizard .firstrunwizard-header {
+  background-image: url(./loginbackground?v=#{theming-cachebuster});
+}
