@@ -8,15 +8,16 @@
 
 namespace Test\Repair;
 
+use OCP\IDBConnection;
 use OCP\ILogger;
 use OCP\Migration\IOutput;
 
 class TestCollationRepair extends \OC\Repair\Collation {
 	/**
-	 * @param \Doctrine\DBAL\Connection $connection
+	 * @param IDBConnection $connection
 	 * @return string[]
 	 */
-	public function getAllNonUTF8BinTables($connection) {
+	public function getAllNonUTF8BinTables(IDBConnection $connection) {
 		return parent::getAllNonUTF8BinTables($connection);
 	}
 }
