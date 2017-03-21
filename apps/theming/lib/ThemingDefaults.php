@@ -167,6 +167,9 @@ class ThemingDefaults extends \OC_Defaults {
 	}
 
 
+	/**
+	 * @return array scss variables to overwrite
+	 */
 	public function getScssVariables() {
 		$cache = $this->cacheFactory->create('theming');
 		if($value = $cache->get('getScssVariables')) {
@@ -176,12 +179,6 @@ class ThemingDefaults extends \OC_Defaults {
 		$variables = [
 			'theming-cachebuster' => '"'.$this->config->getAppValue('theming', 'cachebuster', '0').'"',
 		];
-		if(($this->config->getSystemValue('htaccess.IgnoreFrontController', false) === true ||
-			getenv('front_controller_active') === 'true')) {
-			$variables['nc-webroot'] = '"../../../"';
-		} else {
-			$variables['nc-webroot'] = '"../../../"';
-		}
 
 		$variables['image-logo'] = "'../../".$this->getLogo()."'";
 		$variables['image-login-background'] = "'../../".$this->getBackground()."'";

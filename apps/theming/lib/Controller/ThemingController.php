@@ -318,7 +318,6 @@ class ThemingController extends Controller {
 	 * @PublicPage
 	 *
 	 * @return FileDisplayResponse|NotFoundResponse
-	 * @throws NotFoundException
 	 */
 	public function getStylesheet() {
 		$appDataCss = \OC::$server->getAppDataDir('css');
