@@ -27,6 +27,7 @@
 
 namespace OCA\Theming\Controller;
 
+use OC\Files\AppData\Factory;
 use OC\Template\SCSSCacher;
 use OCA\Theming\ThemingDefaults;
 use OCP\AppFramework\Controller;
@@ -41,9 +42,11 @@ use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use OCP\IConfig;
 use OCP\IL10N;
+use OCP\ILogger;
 use OCP\IRequest;
 use OCA\Theming\Util;
 use OCP\ITempManager;
+use OCP\IURLGenerator;
 
 /**
  * Class ThemingController
@@ -54,7 +57,7 @@ use OCP\ITempManager;
  */
 class ThemingController extends Controller {
 	/** @var ThemingDefaults */
-	private $template;
+	private $themingDefaults;
 	/** @var Util */
 	private $util;
 	/** @var ITimeFactory */
@@ -67,6 +70,12 @@ class ThemingController extends Controller {
 	private $tempManager;
 	/** @var IAppData */
 	private $appData;
+	/** @var IURLGenerator */
+	private $urlGenerator;
+	/** @var Factory */
+	private $appDataFactory;
+	/** @var ILogger */
+	private $logger;
 
 	/**
 	 * ThemingController constructor.
@@ -74,7 +83,7 @@ class ThemingController extends Controller {
 	 * @param string $appName
 	 * @param IRequest $request
 	 * @param IConfig $config
-	 * @param ThemingDefaults $template
+	 * @param ThemingDefaults $themingDefaults
 	 * @param Util $util
 	 * @param ITimeFactory $timeFactory
 	 * @param IL10N $l
@@ -85,22 +94,28 @@ class ThemingController extends Controller {
 		$appName,
 		IRequest $request,
 		IConfig $config,
-		ThemingDefaults $template,
+		ThemingDefaults $themingDefaults,
 		Util $util,
 		ITimeFactory $timeFactory,
 		IL10N $l,
 		ITempManager $tempManager,
-		IAppData $appData
+		IAppData $appData,
+		Factory $factory,
+		ILogger $logger,
+		IURLGenerator $urlGenerator
 	) {
 		parent::__construct($appName, $request);
 
-		$this->template = $template;
+		$this->themingDefaults = $themingDefaults;
 		$this->util = $util;
 		$this->timeFactory = $timeFactory;
 		$this->l = $l;
 		$this->config = $config;
 		$this->tempManager = $tempManager;
 		$this->appData = $appData;
+		$this->appDataFactory = $factory;
+		$this->logger = $logger;
+		$this->urlGenerator = $urlGenerator;
 	}
 
 	/**
@@ -154,7 +169,7 @@ class ThemingController extends Controller {
 				break;
 		}
 
-		$this->template->set($setting, $value);
+		$this->themingDefaults->set($setting, $value);
 		return new DataResponse(
 			[
 				'data' =>
@@ -192,16 +207,16 @@ class ThemingController extends Controller {
 			$folder = $this->appData->newFolder('images');
 		}
 
-		if(!empty($newLogo)) {
+		if (!empty($newLogo)) {
 			$target = $folder->newFile('logo');
 			$target->putContent(file_get_contents($newLogo['tmp_name'], 'r'));
-			$this->template->set('logoMime', $newLogo['type']);
+			$this->themingDefaults->set('logoMime', $newLogo['type']);
 			$name = $newLogo['name'];
 		}
-		if(!empty($newBackgroundLogo)) {
+		if (!empty($newBackgroundLogo)) {
 			$target = $folder->newFile('background');
 			$image = @imagecreatefromstring(file_get_contents($newBackgroundLogo['tmp_name'], 'r'));
-			if($image === false) {
+			if ($image === false) {
 				return new DataResponse(
 					[
 						'data' => [
@@ -216,10 +231,10 @@ class ThemingController extends Controller {
 			// Optimize the image since some people may upload images that will be
 			// either to big or are not progressive rendering.
 			$tmpFile = $this->tempManager->getTemporaryFile();
-			if(function_exists('imagescale')) {
+			if (function_exists('imagescale')) {
 				// FIXME: Once PHP 5.5.0 is a requirement the above check can be removed
 				// Workaround for https://bugs.php.net/bug.php?id=65171
-				$newHeight = imagesy($image)/(imagesx($image)/1920);
+				$newHeight = imagesy($image) / (imagesx($image) / 1920);
 				$image = imagescale($image, 1920, $newHeight);
 			}
 			imageinterlace($image, 1);
@@ -227,7 +242,7 @@ class ThemingController extends Controller {
 			imagedestroy($image);
 
 			$target->putContent(file_get_contents($tmpFile, 'r'));
-			$this->template->set('backgroundMime', $newBackgroundLogo['type']);
+			$this->themingDefaults->set('backgroundMime', $newBackgroundLogo['type']);
 			$name = $newBackgroundLogo['name'];
 		}
 
@@ -250,7 +265,7 @@ class ThemingController extends Controller {
 	 * @return DataResponse
 	 */
 	public function undo($setting) {
-		$value = $this->template->undo($setting);
+		$value = $this->themingDefaults->undo($setting);
 		return new DataResponse(
 			[
 				'data' =>
@@ -320,7 +335,7 @@ class ThemingController extends Controller {
 	 * @return FileDisplayResponse|NotFoundResponse
 	 */
 	public function getStylesheet() {
-		$appDataCss = \OC::$server->getAppDataDir('css');
+		$appDataCss = $this->appDataFactory->get('css');
 		$cacheBusterValue = $this->config->getAppValue('theming', 'cachebuster', '0');
 
 		/* SCSSCacher is required here
@@ -328,11 +343,11 @@ class ThemingController extends Controller {
 		 * since we need to add the cacheBuster value to the url
 		 */
 		$SCSSCacher = new SCSSCacher(
-			\OC::$server->getLogger(),
+			$this->logger,
 			$appDataCss,
-			\OC::$server->getURLGenerator(),
-			\OC::$server->getConfig(),
-			\OC::$server->getThemingDefaults(),
+			$this->urlGenerator,
+			$this->config,
+			$this->themingDefaults,
 			\OC::$SERVERROOT
 		);
 		$appPath = substr(\OC::$server->getAppManager()->getAppPath('theming'), strlen(\OC::$SERVERROOT) + 1);
@@ -368,12 +383,12 @@ class ThemingController extends Controller {
 		$cacheBusterValue = $this->config->getAppValue('theming', 'cachebuster', '0');
 		$responseJS = '(function() {
 	OCA.Theming = {
-		name: ' . json_encode($this->template->getName()) . ',
-		url: ' . json_encode($this->template->getBaseUrl()) . ',
-		slogan: ' . json_encode($this->template->getSlogan()) . ',
-		color: ' . json_encode($this->template->getMailHeaderColor()) . ',
-		inverted: ' . json_encode($this->util->invertTextColor($this->template->getMailHeaderColor())) . ',
-		cacheBuster: ' . json_encode($cacheBusterValue). '
+		name: ' . json_encode($this->themingDefaults->getName()) . ',
+		url: ' . json_encode($this->themingDefaults->getBaseUrl()) . ',
+		slogan: ' . json_encode($this->themingDefaults->getSlogan()) . ',
+		color: ' . json_encode($this->themingDefaults->getMailHeaderColor()) . ',
+		inverted: ' . json_encode($this->util->invertTextColor($this->themingDefaults->getMailHeaderColor())) . ',
+		cacheBuster: ' . json_encode($cacheBusterValue) . '
 	};
 })();';
 		$response = new DataDownloadResponse($responseJS, 'javascript', 'text/javascript');

@@ -25,6 +25,10 @@ namespace OCA\Theming\Tests;
 
 use OCA\Theming\ThemingDefaults;
 use OCA\Theming\Util;
+use OCP\Files\IAppData;
+use OCP\Files\NotFoundException;
+use OCP\Files\SimpleFS\ISimpleFile;
+use OCP\Files\SimpleFS\ISimpleFolder;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IConfig;
@@ -44,8 +48,8 @@ class ThemingDefaultsTest extends TestCase {
 	private $defaults;
 	/** @var ThemingDefaults */
 	private $template;
-	/** @var IRootFolder */
-	private $rootFolder;
+	/** @var IAppData */
+	private $appData;
 	/** @var ICacheFactory */
 	private $cacheFactory;
 
@@ -54,7 +58,7 @@ class ThemingDefaultsTest extends TestCase {
 		$this->config = $this->getMockBuilder(IConfig::class)->getMock();
 		$this->l10n = $this->getMockBuilder(IL10N::class)->getMock();
 		$this->urlGenerator = $this->getMockBuilder(IURLGenerator::class)->getMock();
-		$this->rootFolder = $this->getMockBuilder(IRootFolder::class)
+		$this->appData = $this->getMockBuilder(IAppData::class)
 			->disableOriginalConstructor()
 			->getMock();
 		$this->cacheFactory = $this->getMockBuilder(ICacheFactory::class)->getMock();
@@ -89,7 +93,7 @@ class ThemingDefaultsTest extends TestCase {
 			$this->l10n,
 			$this->urlGenerator,
 			$this->defaults,
-			$this->rootFolder,
+			$this->appData,
 			$this->cacheFactory,
 			$this->util
 		);
@@ -394,6 +398,11 @@ class ThemingDefaultsTest extends TestCase {
 	}
 
 	public function testGetBackgroundDefault() {
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willThrowException(new NotFoundException());
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
@@ -404,6 +413,12 @@ class ThemingDefaultsTest extends TestCase {
 	}
 
 	public function testGetBackgroundCustom() {
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$folder->expects($this->once())->method('getFile')->willReturn($file);
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willReturn($folder);
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
@@ -414,6 +429,11 @@ class ThemingDefaultsTest extends TestCase {
 	}
 
 	public function testGetLogoDefault() {
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willThrowException(new NotFoundException());
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')
@@ -424,6 +444,12 @@ class ThemingDefaultsTest extends TestCase {
 	}
 
 	public function testGetLogoCustom() {
+		$folder = $this->createMock(ISimpleFolder::class);
+		$file = $this->createMock(ISimpleFile::class);
+		$folder->expects($this->once())->method('getFile')->willReturn($file);
+		$this->appData->expects($this->once())
+			->method('getFolder')
+			->willReturn($folder);
 		$this->config
 			->expects($this->once())
 			->method('getAppValue')

@@ -52,13 +52,16 @@ class SCSSCacherTest extends \Test\TestCase {
 		$this->appData = $this->createMock(IAppData::class);
 		$this->urlGenerator = $this->createMock(IURLGenerator::class);
 		$this->config = $this->createMock(IConfig::class);
+		$this->defaults = $this->createMock(\OC_Defaults::class);
 		$this->scssCacher = new SCSSCacher(
 			$this->logger,
 			$this->appData,
 			$this->urlGenerator,
 			$this->config,
+			$this->defaults,
 			\OC::$SERVERROOT
 		);
+		$this->defaults->expects($this->any())->method('getScssVariables')->willReturn([]);
 	}
 
 	public function testProcessUncachedFileNoAppDataFolder() {
@@ -127,13 +130,12 @@ class SCSSCacherTest extends \Test\TestCase {
 		$path = \OC::$SERVERROOT . '/core/css/';
 
 		$folder->expects($this->at(0))->method('getFile')->with($fileNameCSS)->willThrowException(new NotFoundException());
-		$actual = self::invokePrivate($this->scssCacher, 'isCached', [$fileNameCSS, $fileNameSCSS, $folder, $path]);
+		$actual = self::invokePrivate($this->scssCacher, 'isCached', [$fileNameCSS, $folder, $path]);
 		$this->assertFalse($actual);
 	}
 
 	public function testIsCachedNoDepsFile() {
 		$fileNameCSS = "styles.css";
-		$fileNameSCSS = "styles.scss";
 		$folder = $this->createMock(ISimpleFolder::class);
 		$file = $this->createMock(ISimpleFile::class);
 		$path = \OC::$SERVERROOT . '/core/css/';
@@ -142,7 +144,7 @@ class SCSSCacherTest extends \Test\TestCase {
 		$folder->expects($this->at(0))->method('getFile')->with($fileNameCSS)->willReturn($file);
 		$folder->expects($this->at(1))->method('getFile')->with($fileNameCSS . '.deps')->willThrowException(new NotFoundException());
 
-		$actual = self::invokePrivate($this->scssCacher, 'isCached', [$fileNameCSS, $fileNameSCSS, $folder, $path]);
+		$actual = self::invokePrivate($this->scssCacher, 'isCached', [$fileNameCSS, $folder, $path]);
 		$this->assertFalse($actual);
 	}
 	public function testCacheNoFile() {
