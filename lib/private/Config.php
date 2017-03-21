@@ -40,7 +40,7 @@ namespace OC;
  */
 class Config {
 
-	const ENV_PREFIX = 'OC_';
+	const ENV_PREFIX = 'NC_';
 
 	/** @var array Associative array ($key => $value) */
 	protected $cache = array();
